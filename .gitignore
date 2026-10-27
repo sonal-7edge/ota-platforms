@@ -1,0 +1,17 @@
+# Build output
+build/
+firmware/*/build/
+firmware/*/sdkconfig
+firmware/*/sdkconfig.old
+firmware/*/managed_components/
+firmware/*/dependencies.lock
+
+# Simulated devices (flash and eFuse files) and their manufacturing records
+devices/
+factory/records/
+
+# Signing keys and device credentials never go into git
+keys/
+*.pem
+*.key
+*.crt

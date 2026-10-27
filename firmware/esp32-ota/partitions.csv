@@ -1,0 +1,14 @@
+# Flash layout for a 4 MB ESP32 (ESP32 DevKit V1).
+# This layout is fixed once devices ship, so it leaves room for later needs:
+#  - the partition table sits at 0x10000 (not the default 0x8000) so the
+#    bootloader has 60 KB, enough once Secure Boot is turned on
+#  - nvs_keys is reserved now for NVS encryption with flash encryption
+#
+# Name,     Type, SubType,  Offset,   Size,     Flags
+nvs,        data, nvs,      0x11000,  0x6000,
+otadata,    data, ota,      0x17000,  0x2000,
+phy_init,   data, phy,      0x19000,  0x1000,
+nvs_keys,   data, nvs_keys, 0x1A000,  0x1000,   encrypted
+ota_0,      app,  ota_0,    0x20000,  0x1C0000,
+ota_1,      app,  ota_1,    0x1E0000, 0x1C0000,
+storage,    data, spiffs,   0x3A0000, 0x60000,

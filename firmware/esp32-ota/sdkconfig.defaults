@@ -1,0 +1,20 @@
+# Settings shared by every build (QEMU and the real board).
+
+# Chip and flash
+CONFIG_IDF_TARGET="esp32"
+CONFIG_ESPTOOLPY_FLASHSIZE_4MB=y
+
+# Our own partition table (see partitions.csv)
+CONFIG_PARTITION_TABLE_CUSTOM=y
+CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions.csv"
+CONFIG_PARTITION_TABLE_OFFSET=0x10000
+
+# Second-stage bootloader: run new firmware on trial and roll back
+# if the firmware does not confirm itself
+CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE=y
+
+# Plain logs, easier to read and to search in scripts
+CONFIG_LOG_COLORS=n
+
+# Wait for an IPv4 address only
+CONFIG_EXAMPLE_CONNECT_IPV6=n
