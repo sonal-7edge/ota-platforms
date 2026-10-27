@@ -1,6 +1,6 @@
 # ota-platforms
 
-Reference implementation of safe over-the-air (OTA) updates for ESP32 devices, built for the 7EDGE OTA and fleet management OKR. It runs on a simulated ESP32 in QEMU first, then on an ESP32 DevKit V1.
+Reference implementation of safe over-the-air (OTA) updates for ESP32 devices, built for the  OTA and fleet management OKR. It runs on a simulated ESP32 in QEMU first, then on an ESP32 DevKit V1.
 
 Background and decisions are in the team documentation folder:
 
