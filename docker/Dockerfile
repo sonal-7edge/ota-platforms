@@ -11,6 +11,12 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends jq xxd \
     && rm -rf /var/lib/apt/lists/*
 
+# The component manager caches into $IDF_TOOLS_PATH/root_managed_components
+# (/opt/esp, owned by root). The Makefile runs as the host user, so make it
+# writable for any UID.
+RUN mkdir -p "$IDF_TOOLS_PATH/root_managed_components" \
+    && chmod 1777 "$IDF_TOOLS_PATH/root_managed_components"
+
 # The repository is mounted here by the Makefile.
 WORKDIR /project
 
