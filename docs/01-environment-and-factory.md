@@ -73,15 +73,16 @@ identity written at 0x11000: serial SIM-0001 (AWS IoT certificate added in a lat
 == 5. Register in the fleet
 SKIP: needs the AWS IoT identity (approach A), added in a later step
 
-== 6. Check the device boots and passes its self-test
-device reported: {"serial":"SIM-0001","version":"1.0.0","partition":"ota_0","state":"...","self_test":"pass","action":"none"}
+== 6. Check the device boots signed firmware and refuses anything else
+first boot (QEMU stops itself once the device reports its status)
+device reported: {"serial":"SIM-0001","version":"1.0.0","partition":"ota_0","state":"valid","secure_boot":"off","self_test":"pass","action":"none"}
 ok: serial = SIM-0001
 ok: version = 1.0.0
 ok: partition = ota_0
 ok: self_test = pass
 
 == 7. Lock the debug port
-SKIP: QEMU has no debug port; on the real board this is the JTAG-disable eFuse
+SKIP: plain profile; on the real board this is the JTAG-disable eFuse
 
 == 8. Write the manufacturing record
 record: /project/factory/records/SIM-0001.json
@@ -89,7 +90,7 @@ record: /project/factory/records/SIM-0001.json
 PASS: SIM-0001 provisioned. Boot it with: make run SERIAL=SIM-0001
 ```
 
-A fresh factory image is not on trial, so `state` reads `none` or `undefined` and `action` is `none`. The rollback path only applies to an image installed by an OTA update.
+A factory image is not on trial, so it reports `state` `valid` and `action` `none`. The trial-and-rollback path only applies to an image installed by an OTA update.
 
 The device now exists as:
 
@@ -130,6 +131,6 @@ I (...) ota_app: heartbeat serial=SIM-0001 uptime_s=30 free_heap=...
 
 ## What comes next
 
-1. **Secure Boot V2 and signed images:** a development signing key in `keys/` (never in git), a signed bootloader and firmware, the key digest burned into the simulated eFuses in factory step 3, and a check that an unsigned image is refused.
+1. **Secure Boot V2 and signed images:** see [02 - Secure Boot V2 and signed images](02-secure-boot.md).
 2. **AWS IoT identity (approach A):** factory steps 4 and 5 create the thing, certificate and policy and write the certificate into NVS.
 3. **First OTA update through AWS IoT Jobs:** build 1.0.1, upload it to S3, create a job, and watch the trial boot and confirmation.

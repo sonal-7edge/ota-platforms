@@ -3,11 +3,15 @@
 #
 #   make image                   build the Docker image (once)
 #   make shell                   open a shell in the container
+#   make keys                    create the development Secure Boot signing key (once)
 #   make build                   build bootloader, partition table and firmware for QEMU
 #   make factory SERIAL=SIM-0001 provision a new simulated device
 #   make run SERIAL=SIM-0001     boot that device in QEMU (Ctrl-] to exit)
 #   make new-device SERIAL=...   delete a simulated device so it can be provisioned again
 #   make clean                   delete build output
+#
+# PROFILE picks the build: qemu (default, no Secure Boot) or qemu-secure
+# (Secure Boot V2, signed images), e.g. make factory PROFILE=qemu-secure SERIAL=SEC-0001
 
 IDF_VERSION ?= v5.5.6
 IMAGE       ?= ota-platforms/esp-idf:$(IDF_VERSION)
@@ -20,6 +24,9 @@ IDF_ARGS    := -C $(PROJECT_DIR) -B $(BUILD_DIR) \
                -D SDKCONFIG=$(BUILD_DIR)/sdkconfig \
                -D SDKCONFIG_DEFAULTS="sdkconfig.defaults;sdkconfig.$(PROFILE)"
 
+# Development Secure Boot signing key. Never committed (keys/ is in .gitignore).
+SIGNING_KEY := keys/dev_secure_boot_signing_key.pem
+
 # Interactive flags only when a terminal is attached (so CI can run targets too).
 TTY := $(shell [ -t 0 ] && echo -it)
 
@@ -29,7 +36,7 @@ DOCKER_RUN := docker run --rm $(TTY) \
               -u $(shell id -u):$(shell id -g) -e HOME=/tmp \
               $(IMAGE)
 
-.PHONY: image shell build factory run new-device clean
+.PHONY: image shell keys build factory run new-device clean
 
 image:
 	docker build --build-arg IDF_VERSION=$(IDF_VERSION) -t $(IMAGE) docker
@@ -37,10 +44,29 @@ image:
 shell:
 	$(DOCKER_RUN) bash
 
+# Creates the key once and never overwrites it: devices provisioned with a key
+# only boot firmware signed with that same key.
+keys:
+	@if [ -f $(SIGNING_KEY) ]; then \
+		echo "$(SIGNING_KEY) already exists, keeping it"; \
+	else \
+		mkdir -p keys && \
+		$(DOCKER_RUN) python -m espsecure generate_signing_key --version 2 --scheme rsa3072 $(SIGNING_KEY) && \
+		chmod 600 $(SIGNING_KEY); \
+	fi
+
 build:
+	@if [ "$(PROFILE)" = "qemu-secure" ] && [ ! -f $(SIGNING_KEY) ]; then \
+		echo "No signing key at $(SIGNING_KEY). Run: make keys"; exit 1; \
+	fi
 	$(DOCKER_RUN) idf.py $(IDF_ARGS) build
 
+# The secure profile's factory check also boots an unsigned image to prove it is
+# refused, so it needs the plain qemu build as well.
 factory: build
+ifeq ($(PROFILE),qemu-secure)
+	$(MAKE) build PROFILE=qemu
+endif
 	$(DOCKER_RUN) bash factory/provision.sh $(SERIAL) $(PROFILE)
 
 run:

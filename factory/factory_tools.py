@@ -6,6 +6,9 @@ Commands:
   efuse <out.bin>                        write a blank ESP32 eFuse file (chip revision 3)
   status <boot.log>                      print the OTA_STATUS JSON from a boot log
   record <out.json> key=value ...        write the manufacturing record
+  write-slot <flash.bin> <csv> <name> <image.bin>
+                                         erase a partition (0xFF) and write an image into it
+  tamper <in.bin> <out.bin>              copy an image with one byte in the middle flipped
 """
 import binascii
 import csv
@@ -23,7 +26,7 @@ ESP32_DEFAULT_EFUSE = binascii.unhexlify(
 )
 
 
-def cmd_partition(csv_path, name):
+def find_partition(csv_path, name):
     with open(csv_path, newline='') as f:
         rows = (line for line in f if line.strip() and not line.lstrip().startswith('#'))
         for row in csv.reader(rows):
@@ -31,9 +34,34 @@ def cmd_partition(csv_path, name):
             if fields and fields[0] == name:
                 if not fields[3] or not fields[4]:
                     sys.exit(f'partition {name} has no fixed offset or size in {csv_path}')
-                print(f'{int(fields[3], 0):#x} {int(fields[4], 0):#x}')
-                return
+                return int(fields[3], 0), int(fields[4], 0)
     sys.exit(f'partition {name} not found in {csv_path}')
+
+
+def cmd_partition(csv_path, name):
+    offset, size = find_partition(csv_path, name)
+    print(f'{offset:#x} {size:#x}')
+
+
+def cmd_write_slot(flash_path, csv_path, name, image_path):
+    offset, size = find_partition(csv_path, name)
+    with open(image_path, 'rb') as f:
+        image = f.read()
+    if len(image) > size:
+        sys.exit(f'{image_path} ({len(image)} bytes) does not fit in {name} ({size} bytes)')
+    with open(flash_path, 'r+b') as f:
+        f.seek(offset)
+        f.write(image + b'\xff' * (size - len(image)))
+
+
+def cmd_tamper(in_path, out_path):
+    with open(in_path, 'rb') as f:
+        image = bytearray(f.read())
+    middle = len(image) // 2
+    image[middle] ^= 0x01
+    with open(out_path, 'wb') as f:
+        f.write(image)
+    print(f'flipped one bit at byte {middle:#x}')
 
 
 def cmd_efuse(out_path):
@@ -74,6 +102,10 @@ def main(argv):
         cmd_status(*args)
     elif cmd == 'record' and len(args) >= 1:
         cmd_record(args[0], args[1:])
+    elif cmd == 'write-slot' and len(args) == 4:
+        cmd_write_slot(*args)
+    elif cmd == 'tamper' and len(args) == 2:
+        cmd_tamper(*args)
     else:
         sys.exit(__doc__)
 

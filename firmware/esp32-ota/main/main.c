@@ -22,6 +22,7 @@
 #include "esp_log.h"
 #include "esp_netif.h"
 #include "esp_ota_ops.h"
+#include "esp_secure_boot.h"
 #include "esp_system.h"
 #include "esp_timer.h"
 #include "nvs.h"
@@ -116,8 +117,10 @@ void app_main(void)
     esp_err_t state_err = esp_ota_get_state_partition(running, &state);
     const char *state_text = (state_err == ESP_OK) ? ota_state_name(state) : "none";
 
-    ESP_LOGI(TAG, "firmware %s, running from %s at 0x%06lx, OTA state %s",
-             app->version, running->label, (unsigned long)running->address, state_text);
+    const char *secure_boot = esp_secure_boot_enabled() ? "on" : "off";
+
+    ESP_LOGI(TAG, "firmware %s, running from %s at 0x%06lx, OTA state %s, secure boot %s",
+             app->version, running->label, (unsigned long)running->address, state_text, secure_boot);
 
     /* Self-test: what this image needs to be useful. */
     static device_identity_t identity = { .serial = "unknown", .hw_rev = "unknown" };
@@ -140,8 +143,8 @@ void app_main(void)
         } else {
             action = "rollback";
             printf("OTA_STATUS {\"serial\":\"%s\",\"version\":\"%s\",\"partition\":\"%s\","
-                   "\"state\":\"%s\",\"self_test\":\"fail\",\"action\":\"%s\"}\n",
-                   identity.serial, app->version, running->label, state_text, action);
+                   "\"state\":\"%s\",\"secure_boot\":\"%s\",\"self_test\":\"fail\",\"action\":\"%s\"}\n",
+                   identity.serial, app->version, running->label, state_text, secure_boot, action);
             ESP_LOGE(TAG, "self-test failed on trial boot, rolling back");
             esp_ota_mark_app_invalid_rollback_and_reboot();
             return; /* not reached unless there is no previous image to roll back to */
@@ -149,8 +152,8 @@ void app_main(void)
     }
 
     printf("OTA_STATUS {\"serial\":\"%s\",\"version\":\"%s\",\"partition\":\"%s\","
-           "\"state\":\"%s\",\"self_test\":\"%s\",\"action\":\"%s\"}\n",
-           identity.serial, app->version, running->label, state_text,
+           "\"state\":\"%s\",\"secure_boot\":\"%s\",\"self_test\":\"%s\",\"action\":\"%s\"}\n",
+           identity.serial, app->version, running->label, state_text, secure_boot,
            self_test_ok ? "pass" : "fail", action);
 
     xTaskCreate(heartbeat_task, "heartbeat", 3072, identity.serial, 5, NULL);
