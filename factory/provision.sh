@@ -86,15 +86,15 @@ step "2. Flash bootloader and factory firmware ($VERSION, profile $PROFILE)"
 # The same images 'idf.py flash' writes: bootloader, partition table, otadata
 # and the firmware in ota_0, merged into one 4 MB flash file. In the secure
 # profile the bootloader and firmware are signed during the build.
-( cd "$BUILD" && python3 -m esptool --chip=esp32 merge_bin \
-      --output="$DEVICE/flash.bin" --fill-flash-size=4MB @flash_args )
+( cd "$BUILD" && python3 -m esptool --chip=esp32 merge-bin \
+      --output="$DEVICE/flash.bin" --pad-to-size=4MB @flash_args )
 echo "flash image: $DEVICE/flash.bin"
 
 step "3. Turn on secure boot"
 $TOOLS efuse "$DEVICE/efuse.bin"
 if (( SECURE )); then
     echo "Secure Boot V2: the signed bootloader burns the key digest into eFuse on its first boot (step 6)"
-    python3 -m espsecure digest_sbv2_public_key --keyfile "$SIGNING_KEY" --output "$DEVICE/key_digest.bin" >/dev/null
+    python3 -m espsecure digest-sbv2-public-key --keyfile "$SIGNING_KEY" --output "$DEVICE/key_digest.bin" >/dev/null
     KEY_DIGEST="$(od -An -tx1 "$DEVICE/key_digest.bin" | tr -d ' \n')"
     echo "signing key digest: $KEY_DIGEST"
 else

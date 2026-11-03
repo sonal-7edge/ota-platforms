@@ -13,7 +13,7 @@
 # PROFILE picks the build: qemu (default, no Secure Boot) or qemu-secure
 # (Secure Boot V2, signed images), e.g. make factory PROFILE=qemu-secure SERIAL=SEC-0001
 
-IDF_VERSION ?= v5.5.6
+IDF_VERSION ?= v6.0.3
 IMAGE       ?= ota-platforms/esp-idf:$(IDF_VERSION)
 SERIAL      ?= SIM-0001
 PROFILE     ?= qemu
@@ -51,7 +51,7 @@ keys:
 		echo "$(SIGNING_KEY) already exists, keeping it"; \
 	else \
 		mkdir -p keys && \
-		$(DOCKER_RUN) python -m espsecure generate_signing_key --version 2 --scheme rsa3072 $(SIGNING_KEY) && \
+		$(DOCKER_RUN) python -m espsecure generate-signing-key --version 2 --scheme rsa3072 $(SIGNING_KEY) && \
 		chmod 600 $(SIGNING_KEY); \
 	fi
 

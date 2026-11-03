@@ -11,7 +11,7 @@ Background and decisions are in the team documentation folder:
 
 | Step | Status |
 | --- | --- |
-| Docker environment with ESP-IDF v5.5.6 and QEMU | Done |
+| Docker environment with ESP-IDF v6.0.3 and QEMU | Done |
 | Firmware 1.0.0: two OTA slots, rollback enabled, self-test, status line | Done |
 | Simulated factory: flash image, eFuses, identity, first-boot check, manufacturing record | Done |
 | Secure Boot V2 and signed images, with unsigned and tampered images refused at the factory | Ready to test (`qemu-secure` profile) |
@@ -29,7 +29,7 @@ Nothing else is installed on your machine; every step runs in the container.
 ## Quick start
 
 ```bash
-make image                    # once: builds the Docker image (pulls espressif/idf:v5.5.6)
+make image                    # once: builds the Docker image (pulls espressif/idf:v6.0.3)
 make build                    # builds bootloader, partition table and firmware for QEMU
 make factory SERIAL=SIM-0001  # provisions a simulated device
 make run SERIAL=SIM-0001      # boots it in QEMU; press Ctrl-] to exit

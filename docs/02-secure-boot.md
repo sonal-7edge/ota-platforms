@@ -26,11 +26,12 @@ make keys
 Expected output:
 
 ```
-espsecure.py v4.12.0
-RSA 3072 private key in PEM format written to keys/dev_secure_boot_signing_key.pem
+RSA 3072 private key in PEM format written to "keys/dev_secure_boot_signing_key.pem".
 ```
 
 Running it again prints `keys/dev_secure_boot_signing_key.pem already exists, keeping it`.
+
+If you already created the key under ESP-IDF v5.5.6, keep it: the key file is the same format, and devices you provisioned with it still accept firmware signed with it.
 
 ## Step 2. Build the signed firmware
 
@@ -42,8 +43,8 @@ The build is in `build/qemu-secure/`. Its output now includes lines like these, 
 
 ```
 1 signing key(s) found.
-Signed ... bytes of data from .../bootloader.bin. Signature sector now has 1 signature blocks.
-Signed ... bytes of data from .../esp32-ota.bin. Signature sector now has 1 signature blocks.
+Signed ... bytes of data from ".../bootloader-unsigned.bin". Signature sector now has 1 signature blocks.
+Signed ... bytes of data from ".../esp32-ota-unsigned.bin". Signature sector now has 1 signature blocks.
 ```
 
 ESP-IDF also prints a reminder that Secure Boot is enabled without flash encryption. That is expected: flash encryption is a separate, later step.

@@ -10,18 +10,18 @@ Log lines below are examples: timestamps, addresses and hashes will differ on yo
 make image
 ```
 
-This pulls Espressif's official `espressif/idf:v5.5.6` image, which already contains ESP-IDF, its Python environment and QEMU, and adds `jq` and `xxd`. The first run downloads a few GB.
+This pulls Espressif's official `espressif/idf:v6.0.3` image, which already contains ESP-IDF, its Python environment and QEMU, and adds `jq` and `xxd`. The first run downloads a few GB.
 
 Check it:
 
 ```bash
 make shell
-idf.py --version            # ESP-IDF v5.5.6
+idf.py --version            # ESP-IDF v6.0.3
 which qemu-system-xtensa    # a path under /opt/esp/tools/
 exit
 ```
 
-If it fails: if Docker reports the tag `v5.5.6` is not found, pick another v5.5 tag from Docker Hub and run `make image IDF_VERSION=v5.5.x`. Use the same `IDF_VERSION` for every later command.
+If it fails: if Docker reports the tag `v6.0.3` is not found, pick another v6.0 tag from Docker Hub and run `make image IDF_VERSION=v6.0.x`. Use the same `IDF_VERSION` for every later command.
 
 ## Step 2. Build the firmware
 
@@ -35,16 +35,20 @@ This builds three things from `firmware/esp32-ota/` with the QEMU profile (`sdkc
 - the partition table from `partitions.csv`
 - the firmware, version 1.0.0 from `version.txt`
 
+The first build also downloads Espressif's `ethernet_init` component, which ESP-IDF 6 uses for the emulated Ethernet port, into `firmware/esp32-ota/managed_components/` (git-ignored).
+
 The build ends with a summary like this:
 
 ```
 Project build complete. To flash, run:
  idf.py flash
 or
- python -m esptool --chip esp32 -b 460800 ... write_flash ... 0x1000 bootloader/bootloader.bin 0x20000 esp32-ota.bin 0x10000 partition_table/partition-table.bin 0x17000 ota_data_initial.bin
+ python -m esptool --chip esp32 ... write-flash ... 0x1000 build/qemu/bootloader/bootloader.bin 0x10000 build/qemu/partition_table/partition-table.bin 0x17000 build/qemu/ota_data_initial.bin 0x20000 build/qemu/esp32-ota.bin
 ```
 
-Check the addresses: the bootloader at `0x1000`, the partition table at `0x10000`, the firmware at `0x20000` (`ota_0`) and the OTA data at `0x17000`.
+Check the addresses: the bootloader at `0x1000`, the partition table at `0x10000`, the OTA data at `0x17000` and the firmware at `0x20000` (`ota_0`).
+
+If it fails with an error about `ETHERNET_OPENETH_SUPPORT` or Ethernet not being set up: check that `sdkconfig.qemu` turns off `CONFIG_ETHERNET_INTERNAL_SUPPORT` and `CONFIG_ETHERNET_SPI_SUPPORT`, then delete `build/qemu` and build again.
 
 If it fails: delete `build/qemu` and build again, so no settings are left over from an earlier build.
 
@@ -116,7 +120,7 @@ make run SERIAL=SIM-0001
 This runs `idf.py qemu monitor` with the device's own flash and eFuse files. Look for:
 
 ```
-I (...) ota_app: firmware 1.0.0, running from ota_0 at 0x020000, OTA state ...
+I (...) ota_app: firmware 1.0.0, running from ota_0 at 0x020000, OTA state valid, secure boot off
 I (...) ethernet_connect: Ethernet Link Up
 I (...) ethernet_connect: Waiting for IP(s).
 I (...) ethernet_connect: Got IPv4 event: Interface "example_netif_eth" address: 10.0.2.15

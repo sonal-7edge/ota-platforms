@@ -20,8 +20,8 @@ import json
 import sys
 
 # Default eFuse contents for an ESP32 at chip revision 3, copied from
-# ESP-IDF v5.5.6 tools/idf_py_actions/qemu_ext.py (the values "idf.py qemu"
-# uses for a new device). No security eFuses are burned in this image.
+# ESP-IDF v6.0.3 tools/idf_py_actions/qemu_ext.py, the values "idf.py qemu"
+# uses for a new device (the same as in v5.5.6). No security eFuses are burned.
 ESP32_DEFAULT_EFUSE = binascii.unhexlify(
     '00000000000000000000000000800000000000000000100000000000000000000000000000000000'
     '00000000000000000000000000000000000000000000000000000000000000000000000000000000'

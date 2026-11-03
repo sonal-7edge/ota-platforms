@@ -3,7 +3,7 @@
 # Espressif's official ESP-IDF image already contains the ESP-IDF tools,
 # the Python environment and QEMU (qemu-system-xtensa) with its libraries.
 # We pin one ESP-IDF version so every laptop builds the same binaries.
-ARG IDF_VERSION=v5.5.6
+ARG IDF_VERSION=v6.0.3
 FROM espressif/idf:${IDF_VERSION}
 
 # Small extras used by the factory scripts.

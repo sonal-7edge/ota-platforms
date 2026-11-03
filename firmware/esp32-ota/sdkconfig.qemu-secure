@@ -4,8 +4,9 @@
 # Network over QEMU's emulated OpenCores Ethernet port (same as sdkconfig.qemu)
 CONFIG_EXAMPLE_CONNECT_WIFI=n
 CONFIG_EXAMPLE_CONNECT_ETHERNET=y
-CONFIG_EXAMPLE_USE_OPENETH=y
-CONFIG_ETH_USE_OPENETH=y
+CONFIG_ETHERNET_INTERNAL_SUPPORT=n
+CONFIG_ETHERNET_SPI_SUPPORT=n
+CONFIG_ETHERNET_OPENETH_SUPPORT=y
 
 # Secure Boot V2 (RSA-3072) needs ESP32 chip revision v3.0 or later.
 # QEMU emulates revision 3. Check the real board's revision before using this there.
