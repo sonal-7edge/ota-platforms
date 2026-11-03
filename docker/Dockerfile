@@ -17,6 +17,10 @@ RUN apt-get update \
 RUN mkdir -p "$IDF_TOOLS_PATH/root_managed_components" \
     && chmod 1777 "$IDF_TOOLS_PATH/root_managed_components"
 
+# ESP-IDF's git submodules (e.g. openthread) are owned by root, and builds run
+# as the host user, so git warns about "dubious ownership" during cmake.
+RUN git config --system --add safe.directory '*'
+
 # The repository is mounted here by the Makefile.
 WORKDIR /project
 

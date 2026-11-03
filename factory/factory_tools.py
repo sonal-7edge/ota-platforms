@@ -8,10 +8,14 @@ Commands:
   record <out.json> key=value ...        write the manufacturing record
   write-slot <flash.bin> <csv> <name> <image.bin>
                                          erase a partition (0xFF) and write an image into it
-  tamper <in.bin> <out.bin>              copy an image with one byte in the middle flipped
+  tamper <unsigned.bin> <signed.bin> <out.bin>
+                                         make a tampered copy of a signed app image: one bit
+                                         flipped in its code, with the image checksum and
+                                         SHA-256 recomputed so only the signature can catch it
 """
 import binascii
 import csv
+import hashlib
 import json
 import sys
 
@@ -54,14 +58,39 @@ def cmd_write_slot(flash_path, csv_path, name, image_path):
         f.write(image + b'\xff' * (size - len(image)))
 
 
-def cmd_tamper(in_path, out_path):
-    with open(in_path, 'rb') as f:
-        image = bytearray(f.read())
-    middle = len(image) // 2
-    image[middle] ^= 0x01
+def cmd_tamper(unsigned_path, signed_path, out_path):
+    """Model an attacker who changes the firmware and fixes everything that
+    is not secret: the one-byte checksum and the SHA-256 appended to the image.
+    The Secure Boot signature is the only thing left that can reject it."""
+    from esptool.bin_image import LoadFirmwareImage  # available in the ESP-IDF environment
+
+    with open(unsigned_path, 'rb') as f:
+        unsigned = bytearray(f.read())
+    with open(signed_path, 'rb') as f:
+        signed = f.read()
+    if signed[:len(unsigned)] != unsigned:
+        sys.exit(f'{signed_path} does not start with {unsigned_path}; build both from the same build')
+
+    image = LoadFirmwareImage('esp32', unsigned_path)
+    if not image.append_digest or image.data_length is None:
+        sys.exit(f'{unsigned_path} has no appended SHA-256')
+
+    # Flip one bit in the middle of the largest segment's data
+    # (segment header is 8 bytes, so data starts at file_offs + 8).
+    segment = max(image.segments, key=lambda s: len(s.data))
+    position = segment.file_offs + 8 + len(segment.data) // 2
+    unsigned[position] ^= 0x01
+
+    # The checksum XORs every segment data byte, so the same bit flips in it.
+    # It is the last byte before the SHA-256, which covers everything before it.
+    checksum_pos = image.data_length - 1
+    unsigned[checksum_pos] ^= 0x01
+    unsigned[image.data_length:image.data_length + 32] = hashlib.sha256(unsigned[:image.data_length]).digest()
+
+    # Keep the original padding and signature sector from the signed image.
     with open(out_path, 'wb') as f:
-        f.write(image)
-    print(f'flipped one bit at byte {middle:#x}')
+        f.write(bytes(unsigned) + signed[len(unsigned):])
+    print(f'flipped one bit at byte {position:#x}, checksum and SHA-256 recomputed, original signature kept')
 
 
 def cmd_efuse(out_path):
@@ -104,7 +133,7 @@ def main(argv):
         cmd_record(args[0], args[1:])
     elif cmd == 'write-slot' and len(args) == 4:
         cmd_write_slot(*args)
-    elif cmd == 'tamper' and len(args) == 2:
+    elif cmd == 'tamper' and len(args) == 3:
         cmd_tamper(*args)
     else:
         sys.exit(__doc__)

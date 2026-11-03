@@ -75,9 +75,9 @@ ok: self_test = pass
 ok: secure_boot = on
 test: unsigned firmware (from the plain qemu build)
 ok: unsigned image refused (...)
-test: tampered firmware (signed image with one bit flipped)
-flipped one bit at byte 0x...
-ok: tampered image refused (...)
+test: tampered firmware (one bit changed, checksum and SHA-256 fixed, signature kept)
+flipped one bit at byte 0x..., checksum and SHA-256 recomputed, original signature kept
+ok: tampered image refused (signature verification failed)
 
 == 7. Lock the debug port
 JTAG is disabled by the bootloader when it turns on Secure Boot (ESP-IDF default)
@@ -86,7 +86,16 @@ JTAG is disabled by the bootloader when it turns on Secure Boot (ESP-IDF default
 PASS: SEC-0001 provisioned. Boot it with: make run PROFILE=qemu-secure SERIAL=SEC-0001
 ```
 
-The text in brackets after "refused" is the bootloader's own message, for example `Secure boot signature verification failed`.
+The text in brackets after "refused" is the bootloader's own message. A refusal only counts if that message is a signature failure.
+
+The two tests cover different attacks:
+
+| Test | What the image is | What catches it |
+| --- | --- | --- |
+| Unsigned | A valid firmware image built without signing (from the plain `qemu` build) | No signature block, so signature verification fails |
+| Tampered | Our signed firmware with one bit changed. The image's checksum and SHA-256 are recalculated, as an attacker would do, since neither is secret. | The signature no longer matches the image, so signature verification fails |
+
+Changing a bit without fixing the checksum and SHA-256 would also be refused, but by the integrity check, before the signature is ever read. That proves nothing about Secure Boot, so the test fixes them first.
 
 Each refusal test runs on a copy of the device in `devices/SEC-0001/test-unsigned/` and `devices/SEC-0001/test-tampered/`, each with its own `boot.log`. The device's own `flash.bin` is never changed by the tests.
 

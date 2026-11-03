@@ -143,8 +143,9 @@ if (( SECURE )); then
     check secure_boot on
 
     # Each test boots a copy of the device as it is now (Secure Boot already on),
-    # with a bad image in ota_0. The device must not start it.
-    REFUSAL_PATTERN='signature verification failed|signature block is invalid|No valid applications signature|No bootable app partitions'
+    # with a bad image in ota_0. The device must not start it, and the log must
+    # show the bootloader rejecting it on its signature.
+    REFUSAL_PATTERN='signature verification failed|signature block is invalid|No valid applications signature'
     refusal_test() { # <name> <image.bin>
         local name="$1" image="$2" dir="$DEVICE/test-$1" status
         mkdir -p "$dir"
@@ -162,8 +163,8 @@ if (( SECURE )); then
     refusal_test unsigned "$PLAIN_BUILD/esp32-ota.bin"
     UNSIGNED_RESULT=refused
 
-    echo "test: tampered firmware (signed image with one bit flipped)"
-    $TOOLS tamper "$BUILD/esp32-ota.bin" "$DEVICE/tampered.bin"
+    echo "test: tampered firmware (one bit changed, checksum and SHA-256 fixed, signature kept)"
+    $TOOLS tamper "$BUILD/esp32-ota-unsigned.bin" "$BUILD/esp32-ota.bin" "$DEVICE/tampered.bin"
     refusal_test tampered "$DEVICE/tampered.bin"
     TAMPERED_RESULT=refused
 fi
